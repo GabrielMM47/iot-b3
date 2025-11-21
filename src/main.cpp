@@ -3,6 +3,14 @@
 #include <WiFiClientSecure.h>
 #include "certificados.h"
 #include <MQTT.h>
+#include <RCSwitch.h>
+#include <GFButton.h>
+
+//MUDAR DEPOIS
+#define RF_PORT 2
+#define B1_PORT 5
+#define B2_PORT 6
+#define B3_PORT 7
 
 String MQTT_HOST = "ny3.blynk.cloud";
 int MQTT_PORT = 8883;              // TLS
@@ -14,6 +22,35 @@ MQTTClient mqtt(1000);
 
 int sensorLuz = 18; // Pino 10
 unsigned long instanteAnterior = 0;
+int estadoPersiana = 0;
+
+//Botões
+GFButton button1(B1_PORT);
+GFButton button2(B2_PORT);
+GFButton button3(B3_PORT);
+
+//RF Switch
+RCSwitch mySwitch = RCSwitch();
+const unsigned long UP_CODE = 2448754;
+const unsigned long DOWN_CODE = 2448756;
+const unsigned long STOP_CODE = 2448760;
+const int BITS = 24;
+
+//Handlers dos botões
+void upButtonPressed(GFButton& button) {
+    Serial.println("Botão 1 Pressionado - Enviando código");
+    mySwitch.send(UP_CODE, BITS);
+}
+
+void downButtonPressed(GFButton& button) {
+    Serial.println("Botão 2 Pressionado - Enviando código");
+    mySwitch.send(DOWN_CODE, BITS);
+}
+
+void stopButtonPressed(GFButton& button) {
+    Serial.println("Botão 3 Pressionado - Enviando código");
+    mySwitch.send(STOP_CODE, BITS);
+}
 
 
 void reconectarWiFi() {
@@ -56,6 +93,19 @@ void recebeuMensagem(String topico, String conteudo) {
             rgbLedWrite(RGB_BUILTIN, 0, 0, 0);
         }
     }
+    if (topico.endsWith(String("downlink/ds/Persiana"))) {
+        int estadoPersiana = conteudo.toInt();
+        Serial.println("Valor recebido: " + String(estadoPersiana));
+        if (estadoPersiana == 0) {
+            mySwitch.send(STOP_CODE, BITS);
+        }
+        else if (estadoPersiana == 1) {
+            mySwitch.send(UP_CODE, BITS);
+        }
+        else if (estadoPersiana == 2) {
+            mySwitch.send(DOWN_CODE, BITS);
+        }
+    }
 }
 
 void setup() {
@@ -70,12 +120,21 @@ void setup() {
 
     reconectarMQTT();
 
+    mySwitch.enableTransmit(RF_PORT);
+
+    button1.setPressHandler(upButtonPressed);
+    button2.setPressHandler(downButtonPressed);
+    button3.setPressHandler(stopButtonPressed);
+
 }
 
 void loop() {
     reconectarWiFi();
     reconectarMQTT();
     mqtt.loop();
+    button1.process();
+    button2.process();
+    button3.process();
 
     unsigned long instanteAtual = millis();
     if (instanteAtual > instanteAnterior + 5000) {  
@@ -84,6 +143,7 @@ void loop() {
         Serial.print("Luz: "); Serial.print(porcentagemLuz); Serial.println("%");
         String conteudo = String(porcentagemLuz);
         mqtt.publish("ds/LightSensor", conteudo);
+
 
         instanteAnterior = instanteAtual;
     }
