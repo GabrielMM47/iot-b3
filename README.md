@@ -93,6 +93,7 @@ O Blynk é utilizado como a interface na palma da mão do usuário, permitindo a
 <img src="images/Datastreams.png" width="800">
 </p>
 <br>
+
 A comunicação bidirecional do Blynk com a lógica de controle é totalmente baseada no protocolo **MQTT**. Essa troca de informações é viabilizada pelos **Datastreams**, que atuam como o principal canal de dados da aplicação.
 
 
