@@ -1,0 +1,1786 @@
+[
+    {
+        "id": "b6f174e57446f366",
+        "type": "tab",
+        "label": "Fluxo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "101f90fc7c20aa5b",
+        "type": "http request",
+        "z": "b6f174e57446f366",
+        "name": "token_getter",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://openapi.tuyaus.com/v1.0/token?grant_type=1",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "client_id",
+                "valueType": "msg",
+                "valueValue": "payload.client_id"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "secret",
+                "valueType": "msg",
+                "valueValue": "payload.secret"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "sign_method",
+                "valueType": "msg",
+                "valueValue": "payload.sign_method"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "sign",
+                "valueType": "msg",
+                "valueValue": "payload.sign"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "t",
+                "valueType": "msg",
+                "valueValue": "payload.t"
+            }
+        ],
+        "x": 2470,
+        "y": 380,
+        "wires": [
+            [
+                "4da1e4c101a59b8f"
+            ]
+        ]
+    },
+    {
+        "id": "af8ee0abd8596b26",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "get_token_headers",
+        "func": "\nfunction generateStringToSign(method, body, headers, url) {\n    // 1. Concatena os headers no formato \"chave:valor\\n\"\n    let headerStr = \"\";\n    \n    // Nota: Em JS, a ordem de iteração de chaves de objeto geralmente segue a ordem de inserção,\n    // assim como dicionários Python modernos, mas é bom garantir que o objeto 'headers'\n    // foi construído na ordem correta se a API exigir isso.\n    for (const [key, value] of Object.entries(headers)) {\n        headerStr += `${key}:${value}\\n`;\n    }\n\n    // 2. Calcula o hash SHA256 do corpo (body)\n    // str.encode() do Python usa UTF-8 por padrão, então usamos 'utf8' aqui.\n    const bodyHash = crypto.createHash('sha256')\n                           .update(body, 'utf8') \n                           .digest('hex');\n\n    // 3. Junta as partes com '\\n'\n    // O array corresponde à lista [method, body_hash, header, url] do Python\n    return [method, bodyHash, headerStr, url].join('\\n');\n}\n\nlet stringToSign = generateStringToSign(\"GET\", \"\", {}, \"/v1.0/token?grant_type=1\")\n\nfunction generateSignature(message, key) {\n    // 1. Cria o HMAC usando SHA256 e a chave em latin-1\n    const hmac = crypto.createHmac('sha256', Buffer.from(key, 'latin1'));\n\n    // 2. Adiciona a mensagem (também convertida como latin-1)\n    hmac.update(message, 'latin1');\n\n    // 3. Gera o digest em hex e converte para maiúsculas\n    const output = hmac.digest('hex').toUpperCase();\n\n    return output;\n}\n\nfunction getTimestamp() {\n    // Date.now() já retorna o tempo em milissegundos (equivalente a time() * 1000 do Python)\n    const timestamp = Date.now().toString();\n\n    return timestamp;\n}\n\nlet client_id = \"uh4h7wadukymptq9g7mk\"\nlet secret_key = \"102704f47f424d2f8169dca28a3544e3\"\nlet t = getTimestamp()\n\nmsg.payload = {\n    client_id: client_id,\n    secret: secret_key,\n    sign_method: \"HMAC-SHA256\",\n    sign: generateSignature(client_id + t + stringToSign, secret_key),\n    t:t\n}\n\nreturn msg",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "crypto",
+                "module": "crypto"
+            }
+        ],
+        "x": 2170,
+        "y": 440,
+        "wires": [
+            [
+                "df32c631cd717796",
+                "101f90fc7c20aa5b"
+            ]
+        ]
+    },
+    {
+        "id": "df32c631cd717796",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "token_headers",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2460,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "8cae75f0a8807a75",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/LED",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 560,
+        "wires": [
+            [
+                "442bac95497e469a"
+            ]
+        ]
+    },
+    {
+        "id": "f90a0d906672063c",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "post_toggle_headers",
+        "func": "function generateStringToSign(method, body, headers, url) {\n    // 1. Concatena os headers no formato \"chave:valor\\n\"\n    let headerStr = \"\";\n    \n    // Nota: Em JS, a ordem de iteração de chaves de objeto geralmente segue a ordem de inserção,\n    // assim como dicionários Python modernos, mas é bom garantir que o objeto 'headers'\n    // foi construído na ordem correta se a API exigir isso.\n    for (const [key, value] of Object.entries(headers)) {\n        headerStr += `${key}:${value}\\n`;\n    }\n\n    // 2. Calcula o hash SHA256 do corpo (body)\n    // str.encode() do Python usa UTF-8 por padrão, então usamos 'utf8' aqui.\n    const bodyHash = crypto.createHash('sha256')\n                           .update(body, 'utf8') \n                           .digest('hex');\n\n    // 3. Junta as partes com '\\n'\n    // O array corresponde à lista [method, body_hash, header, url] do Python\n    return [method, bodyHash, headerStr, url].join('\\n');\n}\n\nlet body = {\n    \"commands\": [\n        {\n            \"code\": msg.command,\n            \"value\": msg.mqtt_payload\n        }\n    ]\n}\n\nlet deviceId = \"vdevo176253724893844\"\nlet stringToSign = generateStringToSign(\"POST\", JSON.stringify(body), {}, \"/v1.0/devices/\"+deviceId+\"/commands\")\n\nfunction generateSignature(message, key) {\n    // 1. Cria o HMAC usando SHA256 e a chave em latin-1\n    const hmac = crypto.createHmac('sha256', Buffer.from(key, 'latin1'));\n\n    // 2. Adiciona a mensagem (também convertida como latin-1)\n    hmac.update(message, 'latin1');\n\n    // 3. Gera o digest em hex e converte para maiúsculas\n    const output = hmac.digest('hex').toUpperCase();\n\n    return output;\n}\n\nfunction getTimestamp() {\n    // Date.now() já retorna o tempo em milissegundos (equivalente a time() * 1000 do Python)\n    const timestamp = Date.now().toString();\n\n    return timestamp;\n}\n\nlet client_id = \"uh4h7wadukymptq9g7mk\"\nlet secret_key = \"102704f47f424d2f8169dca28a3544e3\"\nlet t = getTimestamp()\nlet token = msg.payload.substring(0, msg.payload.length - 1)\nmsg.headers = {\n    client_id: client_id,\n    access_token: token,\n    sign_method: \"HMAC-SHA256\",\n    sign: generateSignature(client_id + token + \n    t + stringToSign, secret_key),\n    t:t\n}\n\nmsg.payload = body\n\nreturn msg",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "crypto",
+                "module": "crypto"
+            }
+        ],
+        "x": 1100,
+        "y": 640,
+        "wires": [
+            [
+                "e728c045dc7455d9",
+                "71f9c85f58eb000f"
+            ]
+        ]
+    },
+    {
+        "id": "55e749c593c153ba",
+        "type": "file",
+        "z": "b6f174e57446f366",
+        "name": "token",
+        "filename": "token.txt",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 3030,
+        "y": 840,
+        "wires": [
+            [
+                "0ef21c2f3e3afd66"
+            ]
+        ]
+    },
+    {
+        "id": "e728c045dc7455d9",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "toggle_headers",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1320,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "71f9c85f58eb000f",
+        "type": "http request",
+        "z": "b6f174e57446f366",
+        "name": "toggle_poster",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://openapi.tuyaus.com/v1.0/devices/vdevo176253724893844/commands",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "client_id",
+                "valueType": "msg",
+                "valueValue": "headers.client_id"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "access_token",
+                "valueType": "msg",
+                "valueValue": "headers.access_token"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "sign_method",
+                "valueType": "msg",
+                "valueValue": "headers.sign_method"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "sign",
+                "valueType": "msg",
+                "valueValue": "headers.sign"
+            },
+            {
+                "keyType": "other",
+                "keyValue": "t",
+                "valueType": "msg",
+                "valueValue": "headers.t"
+            }
+        ],
+        "x": 1340,
+        "y": 620,
+        "wires": [
+            [
+                "3da8a942e554e36a",
+                "5b55f2990d07309e"
+            ]
+        ]
+    },
+    {
+        "id": "3da8a942e554e36a",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "toggle_output",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1580,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "442bac95497e469a",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "mqtt_payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "switch_led",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 560,
+        "wires": [
+            [
+                "03034d381928be39"
+            ]
+        ]
+    },
+    {
+        "id": "0ef21c2f3e3afd66",
+        "type": "file in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "filename": "token.txt",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 740,
+        "y": 640,
+        "wires": [
+            [
+                "f90a0d906672063c",
+                "0c875d9c18b813bf"
+            ]
+        ]
+    },
+    {
+        "id": "0c875d9c18b813bf",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "token_read",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 930,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "4da1e4c101a59b8f",
+        "type": "json",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 2610,
+        "y": 380,
+        "wires": [
+            [
+                "d62390ec8a7c220c",
+                "113e945b344adecb"
+            ]
+        ]
+    },
+    {
+        "id": "d62390ec8a7c220c",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.result.access_token",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 2810,
+        "y": 380,
+        "wires": [
+            [
+                "a1dcbebbb5ede826",
+                "55e749c593c153ba"
+            ]
+        ]
+    },
+    {
+        "id": "a1dcbebbb5ede826",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "token",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 3110,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "113e945b344adecb",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "response_json",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2800,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "d5113ec60fc102ed",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/Bright",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 720,
+        "wires": [
+            [
+                "a3252e63a5338b33"
+            ]
+        ]
+    },
+    {
+        "id": "a3252e63a5338b33",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "mqtt_payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "bright_value_v2",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 720,
+        "wires": [
+            [
+                "0ef21c2f3e3afd66"
+            ]
+        ]
+    },
+    {
+        "id": "f211fbc9766699cd",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/lightColor",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 100,
+        "y": 880,
+        "wires": [
+            [
+                "9a39297a856ab42a",
+                "d171c5a73522a042"
+            ]
+        ]
+    },
+    {
+        "id": "9a39297a856ab42a",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "mqtt_payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "colour_data_v2",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 360,
+        "y": 880,
+        "wires": [
+            [
+                "237730426adc838d"
+            ]
+        ]
+    },
+    {
+        "id": "33180be872d35f4e",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/blindStatus",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b858a9c5b93df380",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 240,
+        "y": 1600,
+        "wires": [
+            [
+                "a8c867260b35cc3b"
+            ]
+        ]
+    },
+    {
+        "id": "a8c867260b35cc3b",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/blindStatus",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 490,
+        "y": 1600,
+        "wires": []
+    },
+    {
+        "id": "8ea593bd431fb864",
+        "type": "postgresql",
+        "z": "b6f174e57446f366",
+        "name": "Insert status log",
+        "query": "INSERT INTO iot3_status (luminosidade, meta, cortina)\nVALUES ($luminosidade, $meta, $cortina)",
+        "postgreSQLConfig": "1da4749b7fd6cac0",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 780,
+        "y": 980,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c6fb14b46129e6df",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "ds/log",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 980,
+        "wires": [
+            [
+                "ad80014d34f5cfc9"
+            ]
+        ]
+    },
+    {
+        "id": "ad80014d34f5cfc9",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "Information extractor",
+        "func": "let components = msg.payload.split(\"/\")\nmsg.queryParameters = {\n    cortina: components[0],\n    luminosidade: components[1],\n    meta:components[2],\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 980,
+        "wires": [
+            [
+                "8ea593bd431fb864"
+            ]
+        ]
+    },
+    {
+        "id": "4a11df243a952927",
+        "type": "postgresql",
+        "z": "b6f174e57446f366",
+        "name": "Insert action log",
+        "query": "INSERT INTO iot3_actions(acao, valor, sucesso)\nVALUES ($acao, $valor, $sucesso)",
+        "postgreSQLConfig": "1da4749b7fd6cac0",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 2260,
+        "y": 1160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5b55f2990d07309e",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "Set action success",
+        "func": "let decoded_payload = JSON.parse(msg.payload)\nmsg.success = decoded_payload.success\nmsg.valor = msg.mqtt_payload\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1650,
+        "y": 740,
+        "wires": [
+            [
+                "c465c72a1df71c5c",
+                "e63f860439853a1b"
+            ]
+        ]
+    },
+    {
+        "id": "57d2240d3fb1a82d",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/autoMode",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b858a9c5b93df380",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 240,
+        "y": 1660,
+        "wires": [
+            [
+                "a6716d495f84be76",
+                "379ad544945010e5"
+            ]
+        ]
+    },
+    {
+        "id": "a6716d495f84be76",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/autoMode",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 480,
+        "y": 1660,
+        "wires": []
+    },
+    {
+        "id": "b0af7b037234697b",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/lightMeta",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b858a9c5b93df380",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 240,
+        "y": 1540,
+        "wires": [
+            [
+                "ba3b545c6a339a30"
+            ]
+        ]
+    },
+    {
+        "id": "ba3b545c6a339a30",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/lightMeta",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 480,
+        "y": 1540,
+        "wires": []
+    },
+    {
+        "id": "20f20dad4fb360ee",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/Persiana",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b858a9c5b93df380",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 240,
+        "y": 1480,
+        "wires": [
+            [
+                "e167c0792598606e"
+            ]
+        ]
+    },
+    {
+        "id": "e167c0792598606e",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/Persiana",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 480,
+        "y": 1480,
+        "wires": []
+    },
+    {
+        "id": "f8665385a50cf012",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/LED",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b858a9c5b93df380",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 220,
+        "y": 1720,
+        "wires": [
+            [
+                "85096fa319e08fa4"
+            ]
+        ]
+    },
+    {
+        "id": "85096fa319e08fa4",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/LED",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 470,
+        "y": 1720,
+        "wires": []
+    },
+    {
+        "id": "1e39609c09c59646",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/blindStatus",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 1100,
+        "y": 1280,
+        "wires": [
+            [
+                "97310135e999be09"
+            ]
+        ]
+    },
+    {
+        "id": "597eb16021262e38",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/autoMode",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 1100,
+        "y": 1400,
+        "wires": [
+            [
+                "2684e1cac022dd7b"
+            ]
+        ]
+    },
+    {
+        "id": "1cfb2c6b30fc1d91",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/lightMeta",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 1100,
+        "y": 1180,
+        "wires": [
+            [
+                "a95b3af365ae2cf0"
+            ]
+        ]
+    },
+    {
+        "id": "fcb9295a0ca60da8",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/Persiana",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 1100,
+        "y": 1060,
+        "wires": [
+            [
+                "506b2d9fe70a42a0"
+            ]
+        ]
+    },
+    {
+        "id": "c465c72a1df71c5c",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "Prepare action log",
+        "func": "msg.queryParameters = {\n    acao: msg.command,\n    valor: msg.valor,\n    sucesso: msg.success\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2030,
+        "y": 1160,
+        "wires": [
+            [
+                "4a11df243a952927"
+            ]
+        ]
+    },
+    {
+        "id": "506b2d9fe70a42a0",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "blind_command",
+                "tot": "str"
+            },
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "valor",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "success",
+                "pt": "msg",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1360,
+        "y": 1060,
+        "wires": [
+            [
+                "c465c72a1df71c5c"
+            ]
+        ]
+    },
+    {
+        "id": "a95b3af365ae2cf0",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "light_meta",
+                "tot": "str"
+            },
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "valor",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "success",
+                "pt": "msg",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1360,
+        "y": 1180,
+        "wires": [
+            [
+                "c465c72a1df71c5c"
+            ]
+        ]
+    },
+    {
+        "id": "97310135e999be09",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "set_blind_status",
+                "tot": "str"
+            },
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "valor",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "success",
+                "pt": "msg",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1360,
+        "y": 1280,
+        "wires": [
+            [
+                "debe1ee4bfef7abf"
+            ]
+        ]
+    },
+    {
+        "id": "2684e1cac022dd7b",
+        "type": "change",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "command",
+                "pt": "msg",
+                "to": "auto_mode",
+                "tot": "str"
+            },
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "valor",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "success",
+                "pt": "msg",
+                "to": "true",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1360,
+        "y": 1400,
+        "wires": [
+            [
+                "c465c72a1df71c5c"
+            ]
+        ]
+    },
+    {
+        "id": "748dbb8e61f11bfd",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "ds/blindStatus",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 370,
+        "y": 1180,
+        "wires": [
+            [
+                "747f9e533f3b69d1"
+            ]
+        ]
+    },
+    {
+        "id": "bc4b465eded9a9f9",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "ds/LightSensor",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "fa7923ade7c363e8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 380,
+        "y": 1260,
+        "wires": [
+            [
+                "e08d13f88558b3ff"
+            ]
+        ]
+    },
+    {
+        "id": "747f9e533f3b69d1",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "ds/blindStatus",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b858a9c5b93df380",
+        "x": 640,
+        "y": 1180,
+        "wires": []
+    },
+    {
+        "id": "e08d13f88558b3ff",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "ds/LightSensor",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b858a9c5b93df380",
+        "x": 640,
+        "y": 1260,
+        "wires": []
+    },
+    {
+        "id": "debe1ee4bfef7abf",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "set blind_command labels",
+        "func": "if (msg.valor == 0) {\n    msg.valor = \"parar\"\n} else if (msg.valor == 1) {\n    msg.valor = \"abrir\"\n} else if (msg.valor == 2) {\n    msg.valor = \"fechar\"\n} else {\n    msg.success = false\n    msg.valor = \"error\"\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1610,
+        "y": 1240,
+        "wires": [
+            [
+                "c465c72a1df71c5c",
+                "86a37ea81b79462e"
+            ]
+        ]
+    },
+    {
+        "id": "86a37ea81b79462e",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1900,
+        "y": 1300,
+        "wires": []
+    },
+    {
+        "id": "e63f860439853a1b",
+        "type": "switch",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "property": "success",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1950,
+        "y": 740,
+        "wires": [
+            [
+                "af8ee0abd8596b26"
+            ]
+        ]
+    },
+    {
+        "id": "6e608120df8171b0",
+        "type": "mqtt in",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/lightColor",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b858a9c5b93df380",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 240,
+        "y": 1800,
+        "wires": [
+            [
+                "ad4f8d4c878ef231",
+                "f59eebdeab2ef6dd"
+            ]
+        ]
+    },
+    {
+        "id": "ad4f8d4c878ef231",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/lightColor",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 480,
+        "y": 1800,
+        "wires": []
+    },
+    {
+        "id": "237730426adc838d",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "rgb to hsv",
+        "func": "let rgb = [\"\",\"\",\"\"]\nlet color_idx = 0\nfor (var i = 0; i < msg.mqtt_payload.length; i++) {\n    if (msg.mqtt_payload[i] == 0x0) {\n        color_idx++;\n        continue\n    }\n    rgb[color_idx] += parseInt(msg.mqtt_payload[i], 10) - 48;\n}\n\nmsg.rgb = rgb\n\nfunction rgbToHsv(r,g, b) {\n    // 1. Normalize input values to the range [0, 1]\n    r /= 255;\n    g /= 255;\n    b /= 255;\n\n    // 2. Find the maximum and minimum values to determine range\n    const max = Math.max(r, g, b);\n    const min = Math.min(r, g, b);\n    const diff = max - min; // The \"chroma\"\n\n    let h, s, v = max;\n\n    // 3. Calculate Saturation (S)\n    // If the max value is 0, the color is black, so saturation is 0.\n    s = max === 0 ? 0 : diff / max;\n\n    // 4. Calculate Hue (H)\n    if (max === min) {\n        h = 0; // Achromatic (gray/black/white)\n    } else {\n        switch (max) {\n            case r:\n                // If Red is max, scale based on Green vs Blue\n                h = (g - b) / diff + (g < b ? 6 : 0);\n                break;\n            case g:\n                // If Green is max, shift by 120 degrees (2 * 60)\n                h = (b - r) / diff + 2;\n                break;\n            case b:\n                // If Blue is max, shift by 240 degrees (4 * 60)\n                h = (r - g) / diff + 4;\n                break;\n        }\n        h /= 6; // Normalize back to [0, 1]\n    }\n\n    // 5. Return the values\n    // H is converted to degrees (0-360)\n    // S and V are kept as fractions (0-1)\n    return {\n        h: Math.round(h * 360),\n        s: Number(s.toFixed(2))*1000, // Optional: rounding to 2 decimals\n        v: Number(v.toFixed(2))*1000  // Optional: rounding to 2 decimals\n    };\n}\n\nlet hsv = rgbToHsv(rgb[0], rgb[1], rgb[2])\n\nmsg.mqtt_payload = hsv\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 800,
+        "wires": [
+            [
+                "0ef21c2f3e3afd66",
+                "1d8c2b500996f17d"
+            ]
+        ]
+    },
+    {
+        "id": "f59eebdeab2ef6dd",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "light color",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 1940,
+        "wires": []
+    },
+    {
+        "id": "1d8c2b500996f17d",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 980,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "d171c5a73522a042",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "03034d381928be39",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "change int to boolean",
+        "func": "msg.mqtt_payload = (msg.mqtt_payload == 1)\nreturn msg",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 540,
+        "wires": [
+            [
+                "0ef21c2f3e3afd66",
+                "7284c1cf6fa5201e"
+            ]
+        ]
+    },
+    {
+        "id": "7284c1cf6fa5201e",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 880,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "dc019bd44fb9348d",
+        "type": "telegram command",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "command": "/create_mode",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "1829f86be390ddc7",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 870,
+        "y": 1680,
+        "wires": [
+            [
+                "943a1231416e9e7b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "fc680bac78deed20",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1540,
+        "y": 1860,
+        "wires": []
+    },
+    {
+        "id": "943a1231416e9e7b",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "Extract parameters",
+        "func": "let parameters = msg.payload.content.substring(1,msg.payload.content.length).split(\" \")\nlet parameters_obj = {}\nfor (let i=0; i<parameters.length;i++) {\n    let components = parameters[i].split(\"=\")\n    parameters_obj[components[0]] = components[1]\n}\nparameters_obj.persiana = parseInt(parameters_obj.persiana)\nparameters_obj.bright = parseInt(parameters_obj.bright)\nparameters_obj.luz = (parameters_obj.luz == \"luz\")\nparameters_obj.meta = parseInt(parameters.meta)\nmsg.queryParameters = parameters_obj\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1290,
+        "y": 1700,
+        "wires": [
+            [
+                "fc680bac78deed20",
+                "9c8534c8686302cf"
+            ]
+        ]
+    },
+    {
+        "id": "9c8534c8686302cf",
+        "type": "postgresql",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "query": "INSERT INTO iot3_presets(name, persiana, luz, bright, colour)\nVALUES ($name, $persiana, $luz, $bright, $colour)",
+        "postgreSQLConfig": "1da4749b7fd6cac0",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1770,
+        "y": 1680,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fd651ec6631e0b0f",
+        "type": "telegram command",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "command": "/set_mode",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "1829f86be390ddc7",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 900,
+        "y": 2020,
+        "wires": [
+            [
+                "7b529a499f83f329"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "64dbc2b5a8575c4c",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1580,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "7b529a499f83f329",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "Extract parameter",
+        "func": "msg.queryParameters = {\n    name: msg.payload.content.trim()\n}\n\nreturn msg",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1330,
+        "y": 2040,
+        "wires": [
+            [
+                "64dbc2b5a8575c4c",
+                "206c5c094169451a"
+            ]
+        ]
+    },
+    {
+        "id": "206c5c094169451a",
+        "type": "postgresql",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "query": "SELECT created_at, name, persiana, luz, bright, colour FROM iot3_presets\nWHERE name = $name",
+        "postgreSQLConfig": "1da4749b7fd6cac0",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1830,
+        "y": 2040,
+        "wires": [
+            [
+                "b64bd037d9a36723",
+                "266a62ab6abc2a45",
+                "ce7a38cc166e4ce5"
+            ]
+        ]
+    },
+    {
+        "id": "b64bd037d9a36723",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1980,
+        "y": 2300,
+        "wires": []
+    },
+    {
+        "id": "0bc2f24526eb488e",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/blindStatus",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 2490,
+        "y": 1900,
+        "wires": []
+    },
+    {
+        "id": "48c548ae7eb8dbde",
+        "type": "mqtt out",
+        "z": "b6f174e57446f366",
+        "name": "",
+        "topic": "downlink/ds/LED",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "fa7923ade7c363e8",
+        "x": 2470,
+        "y": 2040,
+        "wires": []
+    },
+    {
+        "id": "379ad544945010e5",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 1780,
+        "wires": []
+    },
+    {
+        "id": "266a62ab6abc2a45",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "extract persiana info",
+        "func": "msg.payload = msg.payload[0].persiana\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2180,
+        "y": 1960,
+        "wires": [
+            [
+                "0bc2f24526eb488e",
+                "4fd9cd97c1907e8b"
+            ]
+        ]
+    },
+    {
+        "id": "ce7a38cc166e4ce5",
+        "type": "function",
+        "z": "b6f174e57446f366",
+        "name": "extract luz info",
+        "func": "msg.payload = msg.payload[0].luz\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2160,
+        "y": 2040,
+        "wires": [
+            [
+                "48c548ae7eb8dbde"
+            ]
+        ]
+    },
+    {
+        "id": "4fd9cd97c1907e8b",
+        "type": "debug",
+        "z": "b6f174e57446f366",
+        "name": "debug 9",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2440,
+        "y": 1840,
+        "wires": []
+    },
+    {
+        "id": "fa7923ade7c363e8",
+        "type": "mqtt-broker",
+        "name": "MQTT",
+        "broker": "mqtt.janks.dev.br",
+        "port": "8883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "5",
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "b858a9c5b93df380",
+        "type": "mqtt-broker",
+        "name": "BlinkMQTT",
+        "broker": "ny3.blynk.cloud",
+        "port": "8883",
+        "tls": "",
+        "clientid": "node-red-fleury-iot",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "5",
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1da4749b7fd6cac0",
+        "type": "postgreSQLConfig",
+        "name": "JanksPostgreSQL",
+        "host": "postgresql.janks.dev.br",
+        "hostFieldType": "str",
+        "port": 5432,
+        "portFieldType": "num",
+        "database": "projeto_b",
+        "databaseFieldType": "str",
+        "ssl": "true",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": 10,
+        "maxFieldType": "num",
+        "idle": 1000,
+        "idleFieldType": "num",
+        "connectionTimeout": 10000,
+        "connectionTimeoutFieldType": "num",
+        "user": "iot",
+        "userFieldType": "str",
+        "password": "pepcon-garton",
+        "passwordFieldType": "str"
+    },
+    {
+        "id": "1829f86be390ddc7",
+        "type": "telegram bot",
+        "botname": "IOTSmartClassBot",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "01b3a42d7c90acfb",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-postgresql": "0.15.4",
+            "node-red-contrib-telegrambot": "17.0.3"
+        }
+    }
+]
