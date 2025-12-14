@@ -105,25 +105,105 @@ A comunicação bidirecional do Blynk com a lógica de controle é totalmente ba
  
 * **Independência de Plataforma:** Essa abordagem via MQTT permite que qualquer sistema (ESP32, um servidor lógico, etc.) que se inscreva (subscribe) nos tópicos corretos possa receber os comandos e enviar os dados de volta para o aplicativo.
 
+
 ### Node-RED (Regras de Negócio)
 O Node-RED atua como o orquestrador do sistema, recebendo as mensagens do Telegram e os dados do Blynk e do ESP32 via MQTT, processando lógicas complexas e salvando dados no banco PostgreSQL.
 
-> **[PARTE FRANCISCO]**
-> *Insira aqui a explicação sobre os fluxos do Node-RED.*
+
+* Fluxo:
+
+<img width="1300" height="687" alt="image" src="https://github.com/user-attachments/assets/f5916a58-ba42-48d0-a921-52342b6b3a49" />
+<br>
+
+* **Redirecionamento de mensagens MQTT**
+  
+Esta parte do fluxo é responsável por agir como intermediador entre o servidor MQTT administrado pelo Blynk (que permite apenas um cliente conectado por conta) e o servidor MQTT do projeto. 
+
+
+   * **Blynk -> Projeto**
+
+<p align="center">
+<img width="429" height="345" alt="image" src="https://github.com/user-attachments/assets/b6e5c89c-6578-4d25-982f-4e958ad66bac" />
+</p>
+<br>
+
+   * **Projeto -> Blynk**
+
+<p align="center">
+<img width="401" height="147" alt="image" src="https://github.com/user-attachments/assets/363e06c1-9992-4472-b016-a41177ac423f" />
+</p>
+<br>
+
+* **Log de status**
+  
+A cada 5 segundos, o ESP-32 envia em um tópico MQTT informaçõoes sobre o sistema, como luminosidade atual, meta de luminosidade e abertura da cortina. Esta parte do fluxo é responsável por registrar essas mensagens em uma tabela no banco de dados.
+
+<p align="center">
+<img width="637" height="243" alt="image" src="https://github.com/user-attachments/assets/bde6a0db-84d8-4735-a8eb-7dc6af06a7e8" />
+</p>
+<br>
+
+* **Request HTTP para API do Tuya**
+  
+Os comandos que controlam a lâmpada inteligente são enviados por MQTT. Este fluxo é responsável por transformar as mensagens MQTT em requests e em seguida enviá-las a API do Tuya.
+
+<p align="center">
+<img width="1088" height="440" alt="image" src="https://github.com/user-attachments/assets/3053d9b0-aa44-492d-bee0-d9b5d887f2bf" />
+</p>
+<br>
+
+   * **Recuperador automático de Token**
+     
+   A API do Tuya utiliza token de autenticação que expiram após algumas horas. Quando um token expira, requests que o utilizam são rejeitados pelo servidor. Este fluxo é responsável por pedir um novo token para a API do Tuya sempre que um request é rejeitado pelo servidor. Este token fica armazenado em um arquivo.
+
+<p align="center">
+<img width="784" height="248" alt="image" src="https://github.com/user-attachments/assets/e42de097-bf69-4d4b-9876-fb833a104b63" />
+</p>
+<br>
+
+* **Log de ação**
+
+Sempre que uma ação é feita, este fluxo a intercepta e registra em uma tabela no banco de dados.
+<p align="center">
+<img width="723" height="277" alt="image" src="https://github.com/user-attachments/assets/5fd7c196-4be7-4efb-a728-b6e969a7ee40" />
+</p>
+
+* **Criação e Seleção de modos pelo Telegram**
+
+Este fluxo recebe comandos através de um bot do telegram que permitem a criação e seleção de modos. Nestes modos o usuário pode configurar uma abertura de cortina específica e se a luz estará ligada ou não. Os modos são armazenados em uma tabela no banco de dados.
+
+<p align="center">
+   <img width="829" height="353" alt="image" src="https://github.com/user-attachments/assets/20e4ae05-037d-4964-93b6-c805d6dac0bc" />
+</p>
+<br>
 
 ### Lâmpada Inteligente (Tuya)
-A integração com a iluminação artificial permite criar cenas híbridas.
+A Lâmpada Inteligente Tuya é a fonte de luz artificial do sistema, que auxilia no controle da luminosidade do ambiente. Esta lâmpada dispõe de uma REST API para controle do dispotivo, permitindo controle a integração no sistema. Para a utilização da API foi necessário criar um projeto de desenvolvedor no portal do Tuya. Mais detalhes sobre esse procedimento estão disponíveis no arquivo "Tuya Light Docs.pdf".
 
-> **[FRANCISCO]**
-> *Insira aqui como foi feita a integração da lâmpada Tuya.*
+* **Dispositivo virtual Tuya**
+Para além da API, o Tuya também disponibiliza uma Lâmpada virtual que permite testes de integração mesmo sem possuir o hardware em mãos.
 
----
+<p align="center">
+<img width="305" height="678" alt="image" src="https://github.com/user-attachments/assets/aa76249f-8683-45a0-8f78-1f20433edae5" />
+</p>
+<br>
+
+* **Dispositivo real**
+
+<p align="center">
+   <img width="500" height="800" alt="image" src="https://github.com/user-attachments/assets/1de02e0d-b086-4054-8d32-96f1bdb93b5d" />
+</p>
+<br>
 
 ## Dashboards e Resultados
 
-Aqui apresentamos como os dados de Log podem ser vistos. Francisco coloca prints do grafana aqui
+Através do dashboard do Grafana o usuário consegue visualizar a evolução dos logs no tempo.
 
-> **[CAPTURA DE TELA DO DASHBOARD GRAFANA]**
+<p align="center">
+<img width="1325" height="636" alt="image" src="https://github.com/user-attachments/assets/ef53b231-2ed3-4321-b5e3-45ea8cbf0a87" />
+</p>
+<br>
+
 
 ### Vídeo de Demonstração
 Veja o sistema em funcionamento:
