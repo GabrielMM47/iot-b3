@@ -88,10 +88,11 @@ O Blynk é utilizado como a interface na palma da mão do usuário, permitindo a
 
 - Controle de Iluminação: Um widget de disco de cores permite o ajuste da cor e intensidade da lâmpada inteligente, integrando a luz artificial ao cenário
 
----
-
-#### Datastreams e Comunicação MQTT
-
+> Datastreams e Comunicação MQTT:
+<p align="center">
+<img src="images/Datastreams.png" width="300">
+</p>
+<br>
 A comunicação bidirecional do Blynk com a lógica de controle é totalmente baseada no protocolo **MQTT**. Essa troca de informações é viabilizada pelos **Datastreams**, que atuam como o principal canal de dados da aplicação.
 
 * **Datastreams Virtuais:** Cada widget da interface (botão, slider, display de valor) é associado a um Datastream virtual (ex: V0, V1, V2). Estes funcionam como variáveis remotas que armazenam e transferem dados.
@@ -99,8 +100,6 @@ A comunicação bidirecional do Blynk com a lógica de controle é totalmente ba
     * **Comandos:** Quando o usuário move um slider, o novo valor é imediatamente enviado via MQTT para o sistema.
     * **Feedback:** Dados do ambiente (como a luminosidade atual ou a posição da persiana) são recebidos via MQTT e usados para atualizar o display de valor do Datastream correspondente na interface, garantindo o feedback em tempo real.
 * **Independência de Plataforma:** Essa abordagem via MQTT permite que qualquer sistema (ESP32, um servidor lógico, etc.) que se inscreva (subscribe) nos tópicos corretos possa receber os comandos e enviar os dados de volta para o aplicativo.
-
----
 
 ### Node-RED (Regras de Negócio)
 O Node-RED atua como o orquestrador do sistema, recebendo as mensagens do Telegram e os dados do Blynk e do ESP32 via MQTT, processando lógicas complexas e salvando dados no banco PostgreSQL.
