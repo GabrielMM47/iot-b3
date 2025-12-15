@@ -204,7 +204,11 @@ Através do dashboard do Grafana o usuário consegue visualizar a evolução dos
 ### Vídeo de Demonstração
 Veja o sistema em funcionamento:
 
-[![Vídeo do Projeto](https://img.youtube.com/vi/10xM_z8acvc/0.jpg)](https://www.youtube.com/watch?v=10xM_z8acvc)
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=10xM_z8acvc">
+    <img src="https://img.youtube.com/vi/10xM_z8acvc/0.jpg" alt="Vídeo de Demonstração do Projeto">
+  </a>
+</div>
 
 ---
 
