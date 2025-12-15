@@ -16,10 +16,6 @@ O "cérebro" do sistema embarcado é um **ESP32-S3**, que gerencia sensores, um 
 
 O sistema utiliza uma arquitetura IoT baseada em MQTT para comunicação entre o hardware e a nuvem.
 
-> **[ESPAÇO RESERVADO PARA EXPLICAÇÃO DA ARQUITETURA]** 
-> Como o Francisco mudou bastante coisa da arquitetura ontem, adicionando um Fluxo de duas etapas, melhor que ele explique essa parte.\
-> *Insira aqui o diagrama ou texto explicativo sobre o fluxo: ESP32 <-> Broker MQTT <-> Node-RED <-> Banco de Dados/Dashboards.*
-
 ### Esquemático Eletrônico
 O circuito foi desenhado no EasyEDA, integrando o ESP32, módulos de RF e sensores.
 
@@ -209,6 +205,7 @@ Através do dashboard do Grafana o usuário consegue visualizar a evolução dos
 Veja o sistema em funcionamento:
 
 [Vídeo do Projeto](https://www.youtube.com/watch?v=FRhOTrCzz2c)
+[![Vídeo do Projeto](https://img.youtube.com/vi/10xM_z8acvc/0.jpg)](https://www.youtube.com/watch?v=10xM_z8acvc)
 
 ---
 
