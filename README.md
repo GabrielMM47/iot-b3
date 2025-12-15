@@ -195,18 +195,16 @@ Para além da API, o Tuya também disponibiliza uma Lâmpada virtual que permite
 
 Através do dashboard do Grafana o usuário consegue visualizar a evolução dos logs no tempo.
 
-
+<p align="center">
 <img width="1325" height="636" alt="image" src="https://github.com/user-attachments/assets/ef53b231-2ed3-4321-b5e3-45ea8cbf0a87" />
-
+</p>
 <br>
 
 
 ### Vídeo de Demonstração
 Veja o sistema em funcionamento:
 
-<p align="center">
 [![Vídeo do Projeto](https://img.youtube.com/vi/10xM_z8acvc/0.jpg)](https://www.youtube.com/watch?v=10xM_z8acvc)
-</p>
 
 ---
 
