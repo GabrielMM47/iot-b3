@@ -206,9 +206,11 @@ Veja o sistema em funcionamento:
 
 <div align="center">
   <a href="https://www.youtube.com/watch?v=10xM_z8acvc">
-    <img src="https://img.youtube.com/vi/10xM_z8acvc/0.jpg" alt="Vídeo de Demonstração do Projeto">
+    <img src="https://img.youtube.com/vi/10xM_z8acvc/0.jpg" alt="Vídeo de Demonstração do Projeto" width="800">
   </a>
 </div>
+
+---
 
 ---
 
